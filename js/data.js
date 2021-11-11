@@ -53,6 +53,7 @@ const actions = {
     name: "Slice",
     type: "weaponskill",
     cast: 0,
+    soul: 10,
     potency: 300,
     description: `Delivers an attack with a potency of 300.
     <span class="green">Additional Effect:</span> Increases <span class="orange">Soul Guage</span> by 10.`,
@@ -64,6 +65,7 @@ const actions = {
     name: "Waxing Slice",
     type: "weaponskill",
     cast: 0,
+    soul: 10,
     comboPotency: 380,
     comboActions: ["slice"],
     description: `Delivers an attack with a potency of 140.
@@ -81,6 +83,7 @@ const actions = {
     name: "Infernal Slice",
     type: "weaponskill",
     cast: 0,
+    soul: 10,
     comboPotency: 460,
     comboActions: ["waxingSlice"],
     description: `Delivers an attack with a potency of 140.
@@ -98,6 +101,7 @@ const actions = {
     name: "Shadow of Death",
     type: "weaponskill",
     cast: 0,
+    soul: 10,
     potency: 300,
     description: `Delivers an attack with a potency of 300.
     <span class="green">Additional Effect:</span> Afflicts target with <span class="yellow">Death's Design</span>, increasing damage you deal target by 10%
@@ -109,6 +113,7 @@ const actions = {
     name: "Soul Slice",
     type: "weaponskill",
     cast: 0,
+    soul: 50,
     charges: 2,
     recharge: 30,
     potency: 460,
@@ -129,7 +134,13 @@ const actions = {
     type: "spell",
     cast: 0,
     description: `Grants <span class="yellow">Soulsow</span> to self, changing the action to <span class="orange">Harvest Moon</span>.
-    Cast time is instant when used outside of battle.`
+    Cast time is instant when used outside of battle.`,
+    execute(state) {
+      setStatus("soulSow", true);
+    },
+    transform(state) {
+      return (hasStatus("soulSow")) ? "harvestMoon" : false;
+    }
   },
   harvestMoon: {
     name: "Harvest Moon",
@@ -139,11 +150,14 @@ const actions = {
     comboActions: ["soulSow"],
     description: `Deals unaspected damage to target and all enemies nearby it with a potency of 600 for the first enemy, and 50% less for all remaining enemies.
     Can only be executed while under the effect of <span class="yellow">Soulsow</span>.`,
-    useable(state) {
+    /*useable(state) {
       return this.combo(state);
-    },
+    },*/
     highlight(state) {
-      return this.combo(state);
+      return hasStatus("soulSow");
+    },
+    execute(state) {
+      setStatus("soulSow", false);
     }
   },
   arcaneCircle: {
@@ -159,12 +173,17 @@ const actions = {
     <span class="green">Duration:</span> 6s
     <span class="green">Circle of Sacrifice Effect:</span> When you or party members under this effect successfully land a weaponskill or cast a spell, the reaper who applied it may be granted a stack of <span class="yellow">Immortal Sacrifice</span>, up to a maximum of 8
     <span class="green">Duration:</span> 30s
-    <span class="green">Bloodsown Circle Effect:</span> Allows you to accumulate stacks of <span class="yellow">Immortal Sacrifice</span> from party members under the effect of your <span class="yellow">Circle of Sacrifice</span>`
+    <span class="green">Bloodsown Circle Effect:</span> Allows you to accumulate stacks of <span class="yellow">Immortal Sacrifice</span> from party members under the effect of your <span class="yellow">Circle of Sacrifice</span>`,
+    execute(state) {
+      setStatus("circleOfSacrifice", true);
+      setStatus("bloodswornCircle", true);
+    }
   },
   plentifulHarvest: {
     name: "Plentiful Harvest",
     type: "weaponskill",
     cast: 0,
+    shroud: 50,
     comboPotency: 520,
     comboActions: ["arcaneCircle"],
     description: `Delivers an attack to all enemies in a straight linebefore you with a potency of 520 for the first enemy, and 60% less for all remaining enemies.
@@ -172,36 +191,77 @@ const actions = {
     Potency increases up to 800 as stacks of <span class="yellow">Immortal Sacrifice</span> exceed minimum cost.
     <span class="green">Additional Effect:</span> Increases <span class="orange">Shroud Gauge</span> by 50
     Cannot be executed while under the effect of <span class="yellow">Bloodsown Circle</span>.
-    Consumes all stacks of <span class="yellow">Immortal Sacrifice</span> upon execution.`
+    Consumes all stacks of <span class="yellow">Immortal Sacrifice</span> upon execution.`,
+    execute(state) {
+      setStatus("bloodswornCircle", false);
+      setStatus("circleOfSacrifice", false);
+    },
+    useable(state) {
+      return hasStatus("bloodswornCircle");
+    }
   },
   gluttony: {
     name: "Gluttony",
     type: "ability",
     cast: 0,
     recast: 60,
+    soulReaver: 2,
     potency: 500,
     description: `Summon your avatar to deal unaspected damage to target and all enemies nearby it with a potency of 500 for the first enemy, and 25% less for all remaining enemies.
     <span class="green">Additional Effect:</span> Grants 2 stacks of <span class="yellow">Soul Reaver</span>
     <span class="green">Duration:</span> 30s
-    <span class="green">Soul Gauge Cost:</span> 50`
+    <span class="green">Soul Gauge Cost:</span> 50`,
+    useable(state) {
+      return state.gauge.soul >= 50;
+    }
   },
   bloodstalk: {
     name: "Blood Stalk",
     type: "ability",
     cast: 0,
+    soul: -50,
     recast: 1,
+    soulReaver: 1,
     potency: 400,
     description: `Summon your avatar to deliver an attack with a potency of 400.
     <span class="green">Additional Effect:</span> Grants <span class="yellow">Soul Reaver</span>
-    <span class="green">Duration:</span> 305
+    <span class="green">Duration:</span> 30s
     Stack count will be reduced to 1 when already under the effect of <span class="yellow">Soul Reaver.</span>
     <span class="green">Soul Gauge Cost:</span> 50
-    *Action changes to <span class="orange">Lemure's Slice</span> while under the effect of <span class="yellow">Enshrouded</span>.`
+    *Action changes to <span class="orange">Lemure's Slice</span> while under the effect of <span class="yellow">Enshrouded</span>.`,
+    transform(state) {
+      //return (state.enhancedGallows == true) ? "enchanted_riposte" : false;
+      if (hasStatus("enhancedGallows")) {
+        return "unveiledGallows";
+      }
+      else if (hasStatus("enhancedGibbet")) {
+        return "unveiledGibbet";
+      }
+      else if (state.shrouded) {
+        return "lemuresSlice";
+      }
+      else {
+        return false; 
+      }
+    },
+    useable(state) {
+      return state.gauge.soul >= 50;
+    },
+    execute(state) {
+      if (!hasStatus("enhancedGallows") || !hasStatus("enhancedGibbet")) {
+        setStatus("soulReaver", true);
+      }
+      // setStatus("soulReaver", true);
+      setStatus("enhancedGallows", false);
+      setStatus("enhancedGibbet", false);
+    }
   },
   gallows: {
     name: "Gallows",
     type: "weaponskill",
     cast: 0,
+    shroud: 10,
+    soulReaverCost: 1,
     potency: 460,
     enhancedPotency: 520,
     description: `Delivers an attack with a potency of 400. 
@@ -214,15 +274,30 @@ const actions = {
     <span class="green">Additional Effect:</span> Increases <span class="orange">Shroud Gauge</span> by 10
     Can only be executed while under the effect of <span class="yellow">Soul Reaver</span>.
 
-    * Action changes to <span class="orange">Cross Reaping</span> while under the effect of <span class="yellow">Enshrouded</span>.`
+    * Action changes to <span class="orange">Cross Reaping</span> while under the effect of <span class="yellow">Enshrouded</span>.`,
+    useable(state) {
+      return hasStatus("soulReaver");
+    },
+    transform(state) {
+      return (state.shrouded) ? "crossReaping" : false;
+    },
+    highlight(state) {
+      return hasStatus("soulReaver");
+    },
+    execute(state) {
+      setStatus("enhancedGibbet", true);
+      setStatus("soulReaver", false);
+    }
   },
   unveiledGallows: {
     name: "Unveiled Gallows",
     type: "ability",
     cast: 0,
     recast: 1,
+    soulCost: 50,
     comboPotency: 400,
     comboActions: ["gibbet"],
+    soulReaver: 1,
     description: `Summon your avatar to deliver an attack with a potency of 400.
     <span class="green">Additional Effect:</span> Grants <span class="yellow">Soul Reaver</span>
     <span class= "green">Duration:</span> 30s
@@ -232,35 +307,66 @@ const actions = {
     
     *This action cannot be assigned to a hotbar.`,
     useable(state) {
-      return this.combo(state);
+      //return this.combo(state);
+      return (hasStatus("enhancedGallows") && state.gauge.soul >= 50);
     },
     highlight(state) {
-      return this.combo(state);
+      // return this.combo(state);
+      return hasStatus("enhancedGallows");
+    },
+    execute(state) {
+      setStatus("soulReaver", true);
+      setStatus("enhancedGallows", false);
     }
+    /*
+    ,
+    execute(state) {
+      setStatus("soulReaver", true);
+      setStatus("enhancedGibbet", false);
+      state.enhancedGibbet = false;
+    }
+    */
   },
   gibbet: {
     name: "Gibbet",
     type: "weaponskill",
     cast: 0,
+    shroud: 10,
+    soulReaverCost: 1,
+    potency: 460,
     enhancedPotency: 520,
     description: `Delivers an attack with a potency of 400.
     460 when executed from a target's flank.
-    Enhanced Gibbet Potency: 460
-    Flank Enhanced Potency: 520
-    Additional Effect: Grants Enhanced Gallows
-    Duration: 60s
-    The action Blood Stalk changes to Unveiled Gallows while under the effect of Enhanced Gallows.
-    Additional Effect: Increases Shroud Gauge by 10
-    Can only be executed while under the effect of Soul Reaver.
+    <span class="green">Enhanced Gibbet Potency:</span> 460
+    <span class="green">Flank Enhanced Potency:</span> 520
+    <span class="green">Additional Effect:</span> Grants <span class="yellow">Enhanced Gallows</span>
+    <span class="green">Duration:</span> 60s
+    The action <span class="orange">Blood Stalk</span> changes to <span class="orange">Unveiled Gallows</span> while under the effect of <span class="yellow">Enhanced Gallows</span>.
+    <span class="green">Additional Effect:</span> Increases <span class="orange">Shroud Gauge</span> by 10
+    Can only be executed while under the effect of <span class="yellow">Soul Reaver</span>.
     
-    *Action changes to Void Reaping while under the effect of Enshrouded.`
+    *Action changes to <span class="orange">Void Reaping</span> while under the effect of <span class="yellow">Enshrouded</span>.`,
+    useable(state) {
+      return hasStatus("soulReaver");
+    },
+    transform(state) {
+      return (state.shrouded) ? "voidReaping" : false;
+    },highlight(state) {
+      return hasStatus("soulReaver");
+    },
+    execute(state) {
+      setStatus("enhancedGallows", true);
+    }
   },
   unveiledGibbet: {
     name: "Unveiled Gibbet",
     type: "ability",
     cast: 0,
     recast: 1,
+    soulCost: 50,
     comboPotency: 400,
+    potency: 400,
+    soulReaver: 1,
     comboActions: ["gallows"],
     description: `Summon your avatar to deliver an attack with a potency of 400.
     <span class="green">Additional Effect:</span> Grants <span class="yellow">Soul Reaver</span>
@@ -271,26 +377,38 @@ const actions = {
 
     * This action cannot be assigned to a hotbar.`,
     useable(state) {
-      return this.combo(state);
+      return (hasStatus("enhancedGibbet") && state.gauge.soul >= 50);
     },
     highlight(state) {
-      return this.combo(state);
+      return hasStatus("enhancedGibbet");
+    },
+    execute(state) {
+      setStatus("soulReaver", true);
+      setStatus("enhancedGibbet", false);
     }
   },
   enshroud: {
     name: "Enshroud",
     type: "ability",
     cast: 0,
+    shroudCost: 50,
     recast: 15,
     description: `Offer your flesh as a vessel to your avatar, gaining maximum stacks of <span class="yellow">Lemure Shroud</span>
     <span class="green">Duration:</span> 30s
     Certain actions cannot be executed while playing host to your avatar.
-    <span class="green">Shroud Gauge Cost:</span> 50`
+    <span class="green">Shroud Gauge Cost:</span> 50`,
+    useable(state) {
+      return state.gauge.shroud >= 50;
+    },
+    execute(state) {
+      state.shrouded = true;
+    }
   },
   voidReaping: {
     name: "Void Reaping",
     type: "weaponskill",
     cast: 0,
+    lemureShroudCost: 1,
     recast: 1.5,
     potency: 460,
     enhancedPotency: 520,
@@ -303,7 +421,14 @@ const actions = {
     Recast timer cannot be affected by status effects or gear attributes.
     <span class="green">Lemure Shroud Cost:</span> 1
 
-    *This action cannot be assigned to a hotbar.`
+    *This action cannot be assigned to a hotbar.`,
+    execute(state) {
+      setStatus("enhancedCrossReaping", true);
+      setStatus("voidShroud", true);
+    },
+    highlight(state) {
+      return state.shrouded;
+    },
   },
   crossReaping: {
     name: "Cross Reaping",
@@ -321,7 +446,14 @@ const actions = {
     Recast timer cannot be affected by status effects or gear attributes
     <span class="green">Lemure Shroud Cost:</span> 1
 
-    *This action cannot be assigned to a hotbar.`
+    *This action cannot be assigned to a hotbar.`,
+    execute(state) {
+      setStatus("enhancedVoidReaping", true);
+      setStatus("voidShroud", true);
+    },
+    highlight(state) {
+      return state.shrouded;
+    },
   },
   lemuresSlice: {
     name: "Lemure's Slice",
@@ -332,7 +464,10 @@ const actions = {
     description: `Delivers an attack with a potency of 200.
     <span class="green">Void Shroud Cost: 2
 
-    *This action cannot be assigned to a hotbar.`
+    *This action cannot be assigned to a hotbar.`,
+    highlight(state) {
+      return state.shrouded;
+    },
   },
   communio: {
     name: "Communio",
@@ -340,7 +475,10 @@ const actions = {
     cast: 1.3,
     potency: 1000,
     description: `Deals unaspected damage to target and all enemies nearby it with a potency of 1,000 for the first enemy, and 60% less for all remaining enemies. 
-    <span class="yellow">Enshrouded</span> effect expires upon execution. Requires at least one stack of <span class="yellow">Lemure Shroud</span> to execute.`
+    <span class="yellow">Enshrouded</span> effect expires upon execution. Requires at least one stack of <span class="yellow">Lemure Shroud</span> to execute.`,
+    execute(state) {
+      state.shrouded = false;
+    }
   },
 
   jolt2: {
@@ -806,6 +944,53 @@ const statuses = {
     name: "Lucid Dreaming",
     duration: 21,
     description: "Gradually restoring MP over time."
+  },
+
+  enhancedGallows: {
+    name: "Enhanced Gallows",
+    duration: 60,
+    description: "Changes Bloodstalk into Unveiled Gallows; increases potency of the next Gallows."
+  },
+  enhancedGibbet: {
+    name: "Enhanced Gibbet",
+    duration: 60,
+    description: "Changes Bloodstalk into Unveiled Gibbet; increases potency of the next Gibbet."
+  },
+  soulReaver: {
+    name: "Soul Reaver",
+    duration: 30,
+    stack: 0,
+    description: "Allows use of Gallows and Gibbet."
+  },
+  enhancedCrossReaping: {
+    name: "Enhanced Cross Reaping",
+    duration: 30,
+    description: "Enhances the potency of the next Cross Reaping."
+  },
+  enhancedVoidReaping: {
+    name: "Enhanced Void Reaping",
+    duration: 30,
+    description: "Enhances the potency of the next Void Reaping."
+  },
+  voidShroud: {
+    name: "Void Shroud",
+    duration: 30,
+    description: "Allows the execution of Lemure's Slice and Lemure's Scythe."
+  },
+  soulSow: {
+    name: "Soul Sow",
+    duration: 1000000,
+    description: "Allows the execution of Harvest Moon."
+  },
+  circleOfSacrifice: {
+    name: "Circle of Sacrifice",
+    duration: 5,
+    description: ""
+  },
+  bloodswornCircle: {
+    name: "Bloodsworn Circle",
+    duration: 6,
+    description: ""
   }
 };
 

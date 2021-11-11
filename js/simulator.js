@@ -3,7 +3,7 @@ var state = {
   recast: {},
   lastAction: "",
   lastCombo: false,
-  gauge: { black: 0, white: 0 },
+  gauge: { black: 0, white: 0, soul: 0, shroud: 0 },
   statuses: {},
   statusTimers: {},
   melee: false,
@@ -17,10 +17,14 @@ var state = {
   hotkeys: {},
   mana: 14400,
   maxMana: 14400,
-  soul: 0,
+
   maxSoul: 100,
-  shroud: 0,
+  lemureShroud: 0,
+  voidShroud: 0,
+  soulReaver: 0,
   maxShroud: 100,
+  shrouded: false,
+
   currentTime: 0,
   targetTime: 0,
   timers: [],
@@ -93,6 +97,9 @@ function useAction(name) {
     var white = action.white > 0 && state.gauge.black >= state.gauge.white + 30 ? Math.floor(action.white / 2) : action.white;
     var black = action.black > 0 && state.gauge.white >= state.gauge.black + 30 ? Math.floor(action.black / 2) : action.black;
 
+    var soul = action.soul > 0 ? action.soul : 0;
+    var shroud = action.shroud > 0 ? action.shroud : 0;
+
     // start DPS timer if we did damage
     var potency = action.calculatePotency(state);
     if(state.damageStart == -1 && potency > 0) {
@@ -134,6 +141,8 @@ function useAction(name) {
     $(".rdm").prop("src", "img/visualisation/Red_mage.png");
     setMana(state.mana - calculateManaCost(action.mana));
     setGauge(state.gauge.black + black, state.gauge.white + white);
+    setSoulGauge(state.gauge.soul + soul);
+    setShroudGauge(state.gauge.shroud + shroud);
     updateActions();
   }, castTime * 1000);
 }
@@ -282,7 +291,9 @@ loadSetting("tooltips", true, "boolean", function(value) {
 
 loadHotkeys(); // load hotkeys
 setGauge(0, 0); // reset state
-setMana(14400)
+setShroudGauge(0);
+setSoulGauge(0);
+setMana(14400);
 updateActions();
 
 requestAnimationFrame(timer); // start the animation-handling timer

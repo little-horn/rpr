@@ -199,6 +199,18 @@ function setGauge(black, white) {
   $(".progress-gauge").toggleClass("mana-balance", state.gauge.white >= 30 && state.gauge.black >= 30);
 }
 
+function setSoulGauge(soul) {
+  state.gauge.soul = Math.max(0, Math.min(100, soul));
+
+  $(".soul").text(`${state.gauge.soul} / 100`);
+}
+
+function setShroudGauge(shroud) {
+  state.gauge.shroud = Math.max(0, Math.min(100, shroud));
+
+  $(".shroud").text(`${state.gauge.shroud} / 100`);
+}
+
 // updates all action buttons state to be correct
 function updateActions() {
   $(".actions .action").each(function() {
