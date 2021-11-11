@@ -204,6 +204,7 @@ const actions = {
     name: "Gluttony",
     type: "ability",
     cast: 0,
+    soul: -50,
     recast: 60,
     soulReaver: 2,
     potency: 500,
@@ -237,7 +238,7 @@ const actions = {
       else if (hasStatus("enhancedGibbet")) {
         return "unveiledGibbet";
       }
-      else if (state.shrouded) {
+      else if (hasStatus("enshrouded")) {
         return "lemuresSlice";
       }
       else {
@@ -279,7 +280,7 @@ const actions = {
       return hasStatus("soulReaver");
     },
     transform(state) {
-      return (state.shrouded) ? "crossReaping" : false;
+      return (hasStatus("enshrouded")) ? "crossReaping" : false;
     },
     highlight(state) {
       return hasStatus("soulReaver");
@@ -350,7 +351,7 @@ const actions = {
       return hasStatus("soulReaver");
     },
     transform(state) {
-      return (state.shrouded) ? "voidReaping" : false;
+      return (hasStatus("enshrouded")) ? "voidReaping" : false;
     },highlight(state) {
       return hasStatus("soulReaver");
     },
@@ -401,7 +402,7 @@ const actions = {
       return state.gauge.shroud >= 50;
     },
     execute(state) {
-      state.shrouded = true;
+      setStatus("enshrouded", true);
     }
   },
   voidReaping: {
@@ -427,7 +428,7 @@ const actions = {
       setStatus("voidShroud", true);
     },
     highlight(state) {
-      return state.shrouded;
+      return hasStatus("enshrouded");
     },
   },
   crossReaping: {
@@ -452,7 +453,7 @@ const actions = {
       setStatus("voidShroud", true);
     },
     highlight(state) {
-      return state.shrouded;
+      return hasStatus("enshrouded");
     },
   },
   lemuresSlice: {
@@ -466,7 +467,7 @@ const actions = {
 
     *This action cannot be assigned to a hotbar.`,
     highlight(state) {
-      return state.shrouded;
+      return hasStatus("enshrouded");
     },
   },
   communio: {
@@ -477,7 +478,10 @@ const actions = {
     description: `Deals unaspected damage to target and all enemies nearby it with a potency of 1,000 for the first enemy, and 60% less for all remaining enemies. 
     <span class="yellow">Enshrouded</span> effect expires upon execution. Requires at least one stack of <span class="yellow">Lemure Shroud</span> to execute.`,
     execute(state) {
-      state.shrouded = false;
+      setStatus("enshrouded", false);
+    },
+    useable(state) {
+      return hasStatus("enshrouded");
     }
   },
 
@@ -991,6 +995,11 @@ const statuses = {
     name: "Bloodsworn Circle",
     duration: 6,
     description: ""
+  },
+  enshrouded: {
+    name: "Enshrouded",
+    duration: 30,
+    description: "In Lemure Shroud form."
   }
 };
 
