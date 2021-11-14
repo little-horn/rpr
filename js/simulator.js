@@ -19,11 +19,14 @@ var state = {
   maxMana: 14400,
 
   maxSoul: 100,
-  lemureShroud: 0,
+  lemure: {
+    shroud: 0,
+    voidShroud: 0
+  },
   voidShroud: 0,
   soulReaver: 0,
   maxShroud: 100,
-  shrouded: false,
+  arcaneCircleDamage: 0,
 
   currentTime: 0,
   targetTime: 0,
@@ -97,8 +100,11 @@ function useAction(name) {
     var white = action.white > 0 && state.gauge.black >= state.gauge.white + 30 ? Math.floor(action.white / 2) : action.white;
     var black = action.black > 0 && state.gauge.white >= state.gauge.black + 30 ? Math.floor(action.black / 2) : action.black;
 
-    var soul = action.soul > 0 ? action.soul : 0;
-    var shroud = action.shroud > 0 ? action.shroud : 0;
+    // var soul = action.soul > 0 ? action.soul : 0;
+    // var shroud = action.shroud > 0 ? action.shroud : 0;
+
+    var soul = action.soul == null ? 0 : action.soul;
+    var shroud = action.shroud == null ? 0 : action.shroud;
 
     // start DPS timer if we did damage
     var potency = action.calculatePotency(state);
@@ -111,7 +117,11 @@ function useAction(name) {
     damage = Math.floor(damage * (1 + state.emboldenDamage));
     damage = Math.floor(damage * (Math.random() * 0.1 + 0.95));
 
+    damage = Math.floor(damage * (1 + state.arcaneCircleDamage));
+    damage = Math.floor(damage * (Math.random() * 0.1 + 0.95));
+
     state.potency += potency * (1 + state.emboldenDamage);
+    state.potency += potency * (1 + state.arcaneCircleDamage);
     state.damage += damage;
 
     if(damage > 0) {

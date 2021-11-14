@@ -175,6 +175,12 @@ const actions = {
     <span class="green">Duration:</span> 30s
     <span class="green">Bloodsown Circle Effect:</span> Allows you to accumulate stacks of <span class="yellow">Immortal Sacrifice</span> from party members under the effect of your <span class="yellow">Circle of Sacrifice</span>`,
     execute(state) {
+      setStatus("arcaneCircle", true);
+      function resetDamage() {
+        state.arcaneCircleDamage = 0;
+      }
+      state.arcaneCircleDamage = 0.03;
+      addTimer(resetDamage, 20000);
       setStatus("circleOfSacrifice", true);
       setStatus("bloodswornCircle", true);
     }
@@ -253,8 +259,8 @@ const actions = {
         setStatus("soulReaver", true);
       }
       // setStatus("soulReaver", true);
-      setStatus("enhancedGallows", false);
-      setStatus("enhancedGibbet", false);
+      // setStatus("enhancedGallows", false);
+      // setStatus("enhancedGibbet", false);
     }
   },
   gallows: {
@@ -295,7 +301,7 @@ const actions = {
     type: "ability",
     cast: 0,
     recast: 1,
-    soulCost: 50,
+    soul: -50,
     comboPotency: 400,
     comboActions: ["gibbet"],
     soulReaver: 1,
@@ -307,6 +313,9 @@ const actions = {
     Can only be executed while under the effect of <span class="yellow">Enhanced Gallows</span>.
     
     *This action cannot be assigned to a hotbar.`,
+    transform(state) {
+      return hasStatus("enshrouded") ? "lemuresSlice" : false;
+    },
     useable(state) {
       //return this.combo(state);
       return (hasStatus("enhancedGallows") && state.gauge.soul >= 50);
@@ -364,7 +373,7 @@ const actions = {
     type: "ability",
     cast: 0,
     recast: 1,
-    soulCost: 50,
+    soul: -50,
     comboPotency: 400,
     potency: 400,
     soulReaver: 1,
@@ -377,6 +386,9 @@ const actions = {
     Can only be executed while under the effect of <span class="yellow">Enhanced Gibbet</span>.
 
     * This action cannot be assigned to a hotbar.`,
+    transform(state) {
+      return hasStatus("enshrouded") ? "lemuresSlice" : false;
+    },
     useable(state) {
       return (hasStatus("enhancedGibbet") && state.gauge.soul >= 50);
     },
@@ -392,7 +404,7 @@ const actions = {
     name: "Enshroud",
     type: "ability",
     cast: 0,
-    shroudCost: 50,
+    shroud: -50,
     recast: 15,
     description: `Offer your flesh as a vessel to your avatar, gaining maximum stacks of <span class="yellow">Lemure Shroud</span>
     <span class="green">Duration:</span> 30s
@@ -403,6 +415,7 @@ const actions = {
     },
     execute(state) {
       setStatus("enshrouded", true);
+      state.lemure.shroud = 5;
     }
   },
   voidReaping: {
@@ -426,10 +439,15 @@ const actions = {
     execute(state) {
       setStatus("enhancedCrossReaping", true);
       setStatus("voidShroud", true);
+      state.lemure.shroud--;
+      state.lemure.voidShroud++;
     },
     highlight(state) {
       return hasStatus("enshrouded");
     },
+    useable(state) {
+      return state.lemure.shroud > 0;
+    }
   },
   crossReaping: {
     name: "Cross Reaping",
@@ -451,10 +469,15 @@ const actions = {
     execute(state) {
       setStatus("enhancedVoidReaping", true);
       setStatus("voidShroud", true);
+      state.lemure.shroud--;
+      state.lemure.voidShroud++;
     },
     highlight(state) {
       return hasStatus("enshrouded");
     },
+    useable(state) {
+      return state.lemure.shroud > 0;
+    }
   },
   lemuresSlice: {
     name: "Lemure's Slice",
@@ -469,6 +492,12 @@ const actions = {
     highlight(state) {
       return hasStatus("enshrouded");
     },
+    useable(state) {
+      return state.lemure.voidShroud >= 2;
+    },
+    execute(state) {
+      state.lemure.voidShroud -= 2;
+    }
   },
   communio: {
     name: "Communio",
@@ -479,9 +508,11 @@ const actions = {
     <span class="yellow">Enshrouded</span> effect expires upon execution. Requires at least one stack of <span class="yellow">Lemure Shroud</span> to execute.`,
     execute(state) {
       setStatus("enshrouded", false);
+      state.lemure.shroud = 0;
+      state.lemure.voidShroud = 0;
     },
     useable(state) {
-      return hasStatus("enshrouded");
+      return (hasStatus("enshrouded") && state.lemure.shroud > 0);
     }
   },
 
@@ -985,6 +1016,11 @@ const statuses = {
     name: "Soul Sow",
     duration: 1000000,
     description: "Allows the execution of Harvest Moon."
+  },
+  arcaneCircle: {
+    name: "Arcane Circle",
+    duration: 20,
+    description: "Increases damage by 3%."
   },
   circleOfSacrifice: {
     name: "Circle of Sacrifice",
