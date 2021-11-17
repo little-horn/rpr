@@ -120,7 +120,21 @@ const actions = {
     description: `Delivers an attack with a potency of 460.
     <span class="green">Additional Effect:</span> Increases <span class="orange">Soul Gauge</span> by 50
     <span class="green">Maximum Charges:</span> 2
-    Shares a recast timer with <span class="orange">Soul Scythe</span>.`
+    Shares a recast timer with <span class="orange">Soul Scythe</span>.`,
+    execute(state) {
+      state.soulSliceCharge--;
+      addTimer(recharge, 30000);
+      function recharge() {
+        state.soulSliceCharge++;
+        state.soulSliceCharge = Math.min(state.soulSliceCharge, 2);
+        if (state.soulSliceCharge != 2) {
+          addTimer(recharge, 30000);
+        }
+      }
+    },
+    useable(state) {
+      return state.soulSliceCharge > 0;
+    }
   },
   harpe: {
     name: "Harpe",

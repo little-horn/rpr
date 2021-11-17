@@ -27,6 +27,7 @@ var state = {
   soulReaver: 0,
   maxShroud: 100,
   arcaneCircleDamage: 0,
+  soulSliceCharge: 2,
 
   currentTime: 0,
   targetTime: 0,
@@ -135,10 +136,10 @@ function useAction(name) {
       }, 1300);
     }
 
-    // give dualcast if we casted a thing
-    if(action.type == "spell" && castTime > 0) {
-      setStatus('dualcast', true);
-    }
+    // // give dualcast if we casted a thing
+    // if(action.type == "spell" && castTime > 0) {
+    //   setStatus('dualcast', true);
+    // }
 
     // last non-ability action used, for combos
     if(action.type != "ability") {
